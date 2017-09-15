@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set_volume! 5
-use_synth mysynth()
-use_bpm mybpm()
-m = melody()
-(0..m[0].length-1).each do |i|
-  if m[0][i] != 0
-    play m[0][i]
+def sonic_play
+  set_volume! 5
+  use_synth mysynth()
+  use_bpm mybpm()
+  m = melody()
+  (0..m[0].length-1).each do |i|
+    if m[0][i] != 0
+      play m[0][i]
+    end
+    sleep m[1][i]
   end
-  sleep m[1][i]
 end
