@@ -12,15 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def sonic_play
-  set_volume! 5
-  use_synth mysynth()
-  use_bpm mybpm()
-  m = melody()
-  (0..m[0].length-1).each do |i|
-    if m[0][i] != 0
-      play m[0][i]
+
+##
+# Plays a single melody in SonicPi.
+def play_melody(m)
+  in_thread do
+    set_volume! 5
+    if defined? mybpm
+      use_bpm mybpm()
     end
-    sleep m[1][i]
+    if defined? mysynth
+      use_synth mysynth()
+    end
+  
+    (0..m[0].length-1).each do |i|
+      if m.length > 2
+        set_volume! m[2][i]
+      end
+      if m[0][i] != 0
+        play m[0][i]
+      end
+      sleep m[1][i]
+    end
+  end
+end
+
+##
+# Plays a melody in SonicPi, optionally supporting multiple sub-melodies in parallel.
+def sonic_play
+  melody = melody()
+  if melody.respond_to?(:key)
+    melody.values().each do |m|
+      play_melody(m)
+    end
+  elsif melody.respond_to?(:length)
+    play_melody(melody)
   end
 end

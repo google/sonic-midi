@@ -14,13 +14,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$LOAD_PATH[0, 0] = File.join(File.dirname(__FILE__), '..', 'lib')
-
 require 'midilib/sequence'
 require 'midilib/consts'
 include MIDI
 
+##
+# Converts a programmatically-defined melody to Midi.
 class MelodyToMidi
+
+  ##
+  # Adds a single note of a specified pitch, volume and duration to track at position time_offset.
+  # Make sure to call track.recalc_delta_from_times() after all notes have been added.
+  private def add_note(track, note, time_offset, duration, volume)
+    event = NoteOn.new(0, note, volume, 0)
+    event.time_from_start = time_offset
+    track.events << event
+    event = NoteOff.new(0, note, volume, 0)
+    event.time_from_start = time_offset + duration
+    track.events << event
+  end
+
+  ##
+  # Adds a melody to track.
+  # The melody is specified as an an array containg up to three sub-arrays:
+  # - List of pitches (as MIDI notes. eg: 60 is C4)
+  # - List of durations (as fractions of a measure. eg: 0.25 is a quarter)
+  # - (Optional) list of volumes (0..5 range)
+  private def add_to_track(track, melody)
+    time_offset = 0
+    (0..melody[0].length-1).each do |i|
+      note = melody[0][i].to_i
+      duration = (480 * melody[1][i]).to_i
+      volume = 127
+      if melody.length >= 3
+        volume = ((127 * melody[2][i]) / 5).to_i
+      end
+      if note != 0
+        add_note(track, note, time_offset, duration, volume)
+      end
+      time_offset += duration
+    end
+  end
+
+  ##
+  # Adds a melody to the track.
+  # The melody object can optionally contain sub-melodies if specified as a dictionary.
+  # For example, it can be of the form {m1: ..., m2: ..., m3: ...}
+  # Alternatively, the melody object can be a single melody (see add_to_track for details).
+  private def process_melody(track, melody)
+    if melody.respond_to?(:key)
+      melody.values().each do |m|
+        add_to_track(track, m)
+      end
+    elsif melody.respond_to?(:length)
+      add_to_track(track, melody)
+    end
+    track.recalc_delta_from_times()
+  end
+
+  ##
+  # Creates a Midi file from a ruby program defining a melody.
+  # It writes its output to the path specified by +output_file+.
+  #
+  # +melody_file+ is expected to contain the following functions:
+  #   melody() - contains a melody (see process_melody for details)
+  #   mybpm() - optional, sets the BPM (or default to 60 if not specified)
   def make_midi(melody_file, output_file)
     seq = Sequence.new()
 
@@ -45,20 +103,7 @@ class MelodyToMidi
     track.events << Controller.new(0, CC_VOLUME, 127)
     track.events << ProgramChange.new(0, 1, 0)
 
-    music = melody()
-
-    delta_time = 0
-    (0..music[0].length-1).each do |i|
-      note = music[0][i].to_i
-      duration = (480 * music[1][i]).to_i
-      if note == 0
-        delta_time = duration
-      else
-        track.events << NoteOn.new(0, note, 127, delta_time)
-        track.events << NoteOff.new(0, note, 127, duration)
-        delta_time = 0
-      end
-    end
+    process_melody(track, melody())
 
     File.open(output_file, 'wb') { |file| seq.write(file) }
   end
