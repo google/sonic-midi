@@ -36,6 +36,26 @@ def check_input(args)
     return input
 end
 
+def print_sequence(title, sequence)
+  puts title
+  sequence.each do |values|
+    puts ' - [%s]' % values.join(', ')
+  end
+end
+
+def print_music(input)
+  require_relative '../lib/shared_functions'
+  load input
+  melody = melody()
+  if melody.respond_to?(:key)
+    melody.keys().each do |k|
+      print_sequence(k, melody[k])
+    end
+  elsif melody.respond_to?(:length)
+    print_sequence('m', melody)
+  end
+end
+
 def play_music(input)
   melody = File.read(input)
   shared_functions = File.read(local_path('shared_functions.rb'))
@@ -56,6 +76,17 @@ end
 program :name, 'sonic_midi'
 program :version, '0.1.0'
 program :description, 'Sends music to Sonic Pi and convert it to Midi'
+
+command :print do |c|
+  c.syntax = 'sonic_midi print <filename>'
+  c.summary = 'Prints the melody sequence'
+  c.description = 'Diagnostical print of the melody sequence'
+  c.example 'description', 'sonic_midi print melody.rb'
+  c.action do |args, options|
+    input = check_input(args)
+    print_music(input)
+  end
+end
 
 command :sonic do |c|
   c.syntax = 'sonic_midi sonic <filename>'

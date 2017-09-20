@@ -14,7 +14,7 @@
 
 def repa(array, x)
   result = []
-  (0..x).each do
+  (1..x).each do
     result.concat(array)
   end
   return result

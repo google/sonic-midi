@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'sonic-midi'
-  s.version     = '0.2.0'
+  s.version     = '0.2.1'
   s.date        = '2017-09-14'
   s.summary     = "Dual Sonic Pi Midi music generator"
   s.description = "Command-line tool to generate Midi music also playable in Sonic Pi"
